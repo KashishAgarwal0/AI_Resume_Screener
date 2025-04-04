@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume_Screener</title>
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+
+</head>
+<body>
+    <div class="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-md mt-10">
+        <h1 class="text-2xl font-bold text-gray-700">Upload Your Resume</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data" class="mt-4">
+            <input type="file" name="resume" class="border p-2 rounded">
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 mt-2">
+                Upload
+            </button>
+        </form>
+    </div>
+</body>
+</html>
