@@ -7,16 +7,16 @@ from resume_extractor import extract_text_from_pdf, extract_entities  # Importin
 from docx import Document
 from PIL import Image
 import pytesseract
-
+from flask_cors import CORS
 app = Flask(__name__)
+CORS(app)
+
+uploaded_jd = ""
 
 UPLOAD_FOLDER = "uploads"
-ALLOWED_EXTENSIONS = {"pdf", "docx", "jpg", "png", "jpeg"}
+ALLOWED_EXTENSIONS = {"pdf", "docx", "jpg", "png", "jpeg", "txt"}
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Load Named Entity Recognition (NER) model
-ner_model = pipeline("ner", model="dbmdz/bert-large-cased-finetuned-conll03-english")
 
 # Load Sentence Transformer model for resume matching
 similarity_model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -37,6 +37,8 @@ def extract_text_with_ocr(image_path):
 
 def calculate_similarity(job_desc, resume_text):
     """Calculate similarity between job description and resume text"""
+    if not job_desc.strip():
+        return None
     job_embedding = similarity_model.encode(job_desc, convert_to_tensor=True)
     resume_embedding = similarity_model.encode(resume_text, convert_to_tensor=True)
     similarity = util.pytorch_cos_sim(job_embedding, resume_embedding)
@@ -54,8 +56,10 @@ def upload_file():
         return jsonify({"error": "No file uploaded"}), 400
 
     file = request.files["resume"]
-    job_desc = request.form.get("job_description", "")
+    job_desc = request.form.get("job_description", "") 
 
+    if not job_desc.strip():
+        job_desc = uploaded_jd
     if file.filename == "":
         return jsonify({"error": "No selected file"}), 400
 
@@ -66,26 +70,57 @@ def upload_file():
 
         # Extract text based on file type
         if filename.endswith(".pdf"):
-            extracted_text = extract_text_from_pdf(filepath)  # Using extract.py function
+            extracted_text = extract_text_from_pdf(filepath)
         elif filename.endswith(".docx"):
             extracted_text = extract_text_from_docx(filepath)
         elif filename.endswith((".jpg", ".png", ".jpeg")):
             extracted_text = extract_text_with_ocr(filepath)
+        elif filename.endswith(".txt"):
+            with open(filepath, "r", encoding="utf-8") as f:
+                extracted_text = f.read()
         else:
             return jsonify({"error": "Unsupported file format"}), 400
 
-        # Perform Named Entity Recognition (NER)
-        resume_info = extract_entities(extracted_text)  # Using extract.py function
+        # Perform skill and project extraction only
+        resume_info = extract_entities(extracted_text)
 
-        # Compute Resume Matching Score
-        similarity_score = calculate_similarity(job_desc, extracted_text) if job_desc else None
+        # Compute Resume Matching Score if JD exists
+        jd_to_use = job_desc if job_desc.strip() else uploaded_jd
+        
+        similarity_score = calculate_similarity(jd_to_use, extracted_text)
 
         return jsonify({
             "Extracted Information": resume_info,
             "Resume Match Score": f"{similarity_score:.2f}" if similarity_score is not None else "No job description provided"
         })
 
-    return jsonify({"error": "Invalid file type. Please upload a PDF, DOCX, or Image file."}), 400
+    return jsonify({"error": "Invalid file type. Please upload a PDF, DOCX, TXT, or Image file."}), 400
+
+@app.route('/upload-jd', methods=['POST'])
+def upload_jd():
+    if 'jd' not in request.files:
+        return jsonify({'error': 'No JD file uploaded'}), 400
+
+    jd_file = request.files['jd']
+    if jd_file.filename == '':
+        return jsonify({'error': 'No JD file selected'}), 400
+
+    jd_text = ""
+    if jd_file.filename.endswith('.txt'):
+        jd_text = jd_file.read().decode('utf-8')
+    elif jd_file.filename.endswith('.pdf'):
+        jd_path = os.path.join('uploads', jd_file.filename)
+        jd_file.save(jd_path)
+        jd_text = extract_text_from_pdf(jd_path)
+        os.remove(jd_path)
+    else:
+        return jsonify({'error': 'Unsupported file format'}), 400
+
+    global uploaded_jd
+    uploaded_jd = jd_text
+    print("[DEBUG] JD Uploaded:\n", uploaded_jd)  # Optional debug print
+
+    return jsonify({'message': 'JD uploaded successfully'})
 
 if __name__ == "__main__":
     app.run(debug=True)

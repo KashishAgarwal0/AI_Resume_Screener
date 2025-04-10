@@ -1,5 +1,18 @@
 The goal of this project is to automate resume screening by extracting key details from resumes and ranking candidates based on job descriptions. This will help recruiters save time by filtering out the best candidates automatically.
 
+how to run this code- 
+1. create the venv folder by running the command -
+ python -m venv venv
+ 
+ 2. activate the environment- 
+  venv\Scripts\activate   // you need to activate this every time whenever you open the project from start
+
+3.Install dependencies:
+  python install -r requirements.txt 
+
+4. run your app:
+python app.py
+
 --------------------------------------------------------------------------------------------------------------------
 
 Project Workflow
@@ -121,3 +134,7 @@ we  are using transformers instead of spacy
 
  Integrate Named Entity Recognition (NER) with Transformers
 Now that you’ve extracted text, let's use Hugging Face’s Transformers library to analyze resumes and extract names, organizations, skills, etc..
+
+______________________________________________________________________________________________________________________
+CORS- it is a policy to hold the information within ( used to merge backend and frontend)
+import flask-CORS
