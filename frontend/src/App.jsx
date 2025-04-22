@@ -1,10 +1,12 @@
-// App.jsx
 import React, { useState } from 'react';
-import UploadJD from './components/UploadJD';
-import UploadResume from './components/UploadResume';
-import Results from './components/Results';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import UploadJD from '../src/components/UploadJD.jsx';
+import UploadResume from '../src/components/UploadResume.jsx';
+import Results from '../src/components/Results.jsx';
+import Login from './components/Login.jsx';
+import Signup from '../src/components/SignUp.jsx';
 
-const App = () => {
+const ScreenerPage = () => {
   const [resumeData, setResumeData] = useState(null);
   const [jdUploaded, setJdUploaded] = useState(false);
 
@@ -17,5 +19,17 @@ const App = () => {
     </div>
   );
 };
+
+const App = () => (
+  <Router>
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/screener" element={<ScreenerPage />} />
+      <Route path="/upload-jd" element={<UploadJD />} />
+      <Route path="/upload" element={<UploadResume/>} />
+    </Routes>
+  </Router>
+);
 
 export default App;
